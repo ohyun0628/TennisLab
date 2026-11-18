@@ -1,0 +1,174 @@
+[
+  {
+    "court_id": 1,
+    "name": "센터 코트 (Center Court)",
+    "type": "outdoor_stadium",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "capacity": 9931,
+    "description": "올림픽 메인 스타디움. 높은 스탠드로 둘러싸여 측면 와류 바람 주의."
+  },
+  {
+    "court_id": 2,
+    "name": "2번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트. 서측 펜스 차폐."
+  },
+  {
+    "court_id": 3,
+    "name": "3번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 4,
+    "name": "4번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 5,
+    "name": "5번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 6,
+    "name": "6번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 7,
+    "name": "7번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 8,
+    "name": "8번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 9,
+    "name": "9번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 10,
+    "name": "10번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 11,
+    "name": "11번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 12,
+    "name": "12번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 13,
+    "name": "13번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 14,
+    "name": "14번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 15,
+    "name": "15번 코트",
+    "type": "outdoor_general",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": false,
+    "description": "실외 일반 하드코트."
+  },
+  {
+    "court_id": 16,
+    "name": "실내 1번 코트 (16번)",
+    "type": "indoor",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": true,
+    "description": "실내 전천후 하드코트. 바람/강수 영향 없음."
+  },
+  {
+    "court_id": 17,
+    "name": "실내 2번 코트 (17번)",
+    "type": "indoor",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": true,
+    "description": "실내 전천후 하드코트. 바람/강수 영향 없음."
+  },
+  {
+    "court_id": 18,
+    "name": "실내 3번 코트 (18번)",
+    "type": "indoor",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": true,
+    "description": "실내 전천후 하드코트. 바람/강수 영향 없음."
+  },
+  {
+    "court_id": 19,
+    "name": "실내 4번 코트 (19번)",
+    "type": "indoor",
+    "surface": "Hard",
+    "orientation_deg": 355,
+    "has_roof": true,
+    "description": "실내 전천후 하드코트. 바람/강수 영향 없음."
+  }
+]
