@@ -1,8 +1,8 @@
 """
-Generate Realistic Weather Dataset for Olympic Park Tennis Courts
+Generate synthetic seasonal weather for Olympic Park tennis analysis
 ==================================================================
-서울 올림픽공원(송파구) 사계절 24시간 기후 통계 모델링 데이터 생성기
-(기상청 서울지역 연간 관측 통계 반영: 365일 x 24시간 = 8,760건)
+기상청 원자료가 아닙니다. 서울 사계절 경향을 흉내 낸 합성 시계열(365일 x 24시간 = 8,760건)입니다.
+앱의 실시간 안내는 이 CSV가 아니라 기상청 초단기실황 API를 씁니다.
 """
 
 import os

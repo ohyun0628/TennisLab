@@ -1,5 +1,5 @@
 """
-TennisLab - 올림픽공원 테니스장 실시간 코트 환경 동역학 & AI 전술 플랫폼
+TennisLab - 올림픽공원 테니스장 실시간 기상·코트 축 기준 플레이 가이드
 ========================================================================
 2026 한국체육산업개발(주) 공공데이터 활용 경진대회 출품작
 """
@@ -157,6 +157,17 @@ zone_filter = st.segmented_control(
     required=True,
     key="zone_filter",
 )
+plot_plan_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "kspo_plot_plan.jpg")
+with st.expander("KSPO 공식 배치도", expanded=True):
+    if os.path.isfile(plot_plan_path):
+        st.image(
+            plot_plan_path,
+            width="stretch",
+            alt="올림픽공원 테니스장 공식 배치도. 1번 메인 스타디움, 5~8번 실내, 9~17번 도로변 실외.",
+        )
+        st.caption("번호는 KSPO 배치도입니다. 장축은 전 코트 117°로 같고, 차이는 실내·메인·도로변입니다.")
+    else:
+        st.caption("배치도 파일을 찾지 못했습니다.")
 wanted_zone = ZONE_FILTERS[zone_filter]
 filtered_keys = [
     key for key, court in courts_dict.items()

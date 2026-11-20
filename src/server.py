@@ -1,7 +1,7 @@
 """
 TennisLab Backend REST API Server (FastAPI)
 ============================================
-올림픽공원 테니스장 물리 엔진 및 ML 모델을 모바일 앱 및 외부 클라이언트에 서빙하는 REST API 서버
+올림픽공원 테니스장 물리 엔진을 모바일 앱 및 외부 클라이언트에 서빙하는 REST API 서버
 """
 
 import os
@@ -31,7 +31,7 @@ except ImportError:
 
 app = FastAPI(
     title="TennisLab REST API",
-    description="한국체육산업개발 올림픽공원 테니스장 코트 환경 동역학 및 AI 추천 API",
+    description="한국체육산업개발 올림픽공원 테니스장 코트 환경 동역학 및 규칙 기반 안내 API",
     version="1.0.0"
 )
 
@@ -199,6 +199,8 @@ def recommend_court(req: RecommendRequest):
     return {
         "player_skill_label": skill_label,
         "weather_summary": f"풍속 {w_speed}m/s, 기온 {temp}℃",
+        "method": "rule",
+        "note": "규칙 기반입니다. 학습 모델이 아닙니다. 강풍이면 실내를 앞에 둡니다.",
         "top_recommendations": scored_courts[:3],
         "all_ranked_courts": scored_courts
     }

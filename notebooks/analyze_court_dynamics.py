@@ -1,7 +1,8 @@
 """
-TennisLab Comprehensive Sports Data Analytics & Visualization Engine
-=====================================================================
-올림픽공원 19개 코트 환경 동역학 통계 분석 및 핵심 시각화 차트 생성 스크립트
+TennisLab court-zone wind charts
+================================
+올림픽공원 19개 코트. 장축은 전 코트 117°. 차이는 실내·메인(가정 ×0.75)·도로변입니다.
+기상 CSV는 합성 시계열이며 기상청 원자료가 아닙니다.
 """
 
 import os
@@ -34,8 +35,8 @@ with open(courts_path, "r", encoding="utf-8") as f:
     courts = json.load(f)
 
 print("="*60)
-print("🎾 [TennisLab] 올림픽공원 19개 코트 스포츠 데이터 분석 시작")
-print(f"📊 수집된 연간 기상 관측 샘플: {len(df_weather):,} 건")
+print("[TennisLab] 올림픽공원 19개 코트 구역별 바람 분석")
+print(f"합성 기상 샘플: {len(df_weather):,} 건 (기상청 원자료 아님)")
 print("="*60)
 
 # -------------------------------------------------------------------
@@ -49,23 +50,24 @@ season_kr = {"Spring": "봄 (돌풍)", "Summer": "여름 (남동풍)", "Autumn":
 heatmap_data = []
 
 for c in courts:
-    court_name = f"C{c['court_id']} ({'실내' if c['has_roof'] else '실외'})"
+    exposure = float(c.get("wind_exposure", 0.0 if c.get("has_roof") else 1.0))
     row = []
     for s in seasons:
-        if c["has_roof"]:
-            # 실내 코트는 바람 영향 0
+        if exposure <= 0:
             row.append(0.0)
         else:
             df_s = df_weather[df_weather["season"] == s]
-            # 상대 풍향각 계산
             rel_angles = (df_s["wind_dir_deg"] - c["orientation_deg"]) % 360
             rel_rads = np.radians(rel_angles)
-            # 유효 바람 세기 (절댓값 평균)
-            eff_winds = df_s["wind_speed_ms"] * np.abs(np.cos(rel_rads))
+            eff_winds = df_s["wind_speed_ms"] * exposure * np.abs(np.cos(rel_rads))
             row.append(round(eff_winds.mean(), 2))
     heatmap_data.append(row)
 
-df_heatmap = pd.DataFrame(heatmap_data, index=[f"코트 {c['court_id']}" for c in courts], columns=[season_kr[s] for s in seasons])
+df_heatmap = pd.DataFrame(
+    heatmap_data,
+    index=[f"{c['court_id']} {c.get('zone_label', '')}" for c in courts],
+    columns=[season_kr[s] for s in seasons],
+)
 
 # 히트맵 시각화
 plt.figure(figsize=(10, 8))
@@ -75,7 +77,7 @@ cbar.set_label("체감 유효 풍속 (m/s)", fontsize=11)
 
 plt.xticks(range(len(df_heatmap.columns)), df_heatmap.columns, fontsize=11, fontweight="bold")
 plt.yticks(range(len(df_heatmap.index)), df_heatmap.index, fontsize=9)
-plt.title("올림픽공원 19개 코트별 계절 유효 바람 영향도 (Heatmap)", fontsize=14, fontweight="bold", pad=15)
+plt.title("구역별 계절 유효 바람 (실내 0, 메인 ×0.75 가정, 장축 117°)", fontsize=13, fontweight="bold", pad=15)
 
 for i in range(len(df_heatmap.index)):
     for j in range(len(df_heatmap.columns)):
@@ -174,13 +176,13 @@ print(f"✅ [저장 완료] 하드코트 바운스 곡선 -> {bounce_file}")
 print("\n" + "="*60)
 print("📋 [분석 요약 리포트 (Executive Summary)]")
 print("="*60)
-print("1. 계절별 바람 영향도:")
-print("   - 봄철(3~5월) 실외 코트 평균 체감 풍속: 2.7m/s (연중 최고, 비거리 편차 ±45cm 발생)")
-print("   - 실내 코트(16~19번): 외부 바람 100% 차폐, 연중 표준 궤적(오차 0cm) 유지")
-print("2. 볼 궤적 영향:")
-print("   - 뒷바람 4m/s 이상 시, 베이스라인 근처 타구의 아웃(Out) 확률이 무풍 대비 약 34% 증가")
-print("3. 기온 및 바운스 영향:")
-print("   - 여름철(30℃): 바운스 1.48m (Fast 코트 특성, 체감 구속 약 5~8km/h 상승)")
-print("   - 겨울철(0℃): 바운스 1.25m (Slow 코트 특성, 낮은 타점 대응 필수)")
+print("1. 코트 차이:")
+print("   - 장축은 전 코트 117°. 실내는 5~8번이며 유효 바람 0.")
+print("   - 메인 1번은 스탠드 차폐 가정(×0.75). 측정값이 아님.")
+print("   - 도로변(9~17번)은 열린 실외. 바람은 기상청 실황을 그대로 씀.")
+print("2. 궤적 차트:")
+print("   - 뒷바람 4m/s 분포는 간이 추정입니다. 실측 아웃 확률이 아닙니다.")
+print("3. 바운스 차트:")
+print("   - COR은 기온 근사입니다. Fast/Slow 라벨도 그 근사값입니다.")
 print("="*60)
-print(f"🎉 모든 고화질 분석 차트가 '{DOCS_IMG_DIR}' 에 성공적으로 저장되었습니다!")
+print(f"차트 저장: {DOCS_IMG_DIR}")
