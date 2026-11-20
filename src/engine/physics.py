@@ -40,19 +40,30 @@ class TennisPhysicsEngine:
         air_density = ((pressure_hpa * 100 - vapor_press) / (287.058 * temp_k)) + (vapor_press / (461.495 * temp_k))
         return round(air_density, 4)
 
+    @staticmethod
+    def player_heading_deg(court_orientation_deg: float, player_side: str = "West") -> float:
+        """
+        플레이어가 바라보는 방위각.
+        West(또는 구 코드 South): 서쪽 엔드에서 장축 방향(올림픽공원 117°)을 봄.
+        East(또는 구 코드 North): 반대 엔드(297°)를 봄.
+        """
+        side = (player_side or "West").strip().lower()
+        if side in {"east", "north", "e", "n"}:
+            return (court_orientation_deg + 180.0) % 360.0
+        return court_orientation_deg % 360.0
+
     @classmethod
-    def decompose_wind(cls, wind_speed_ms: float, wind_dir_deg: float, court_orientation_deg: float, player_side: str = "South") -> Dict[str, Any]:
+    def decompose_wind(cls, wind_speed_ms: float, wind_dir_deg: float, court_orientation_deg: float, player_side: str = "West") -> Dict[str, Any]:
         """
         기상청 풍향/풍속을 코트 축 기준(맞바람/뒷바람, 좌/우 측풍)으로 벡터 분해
         
         Args:
             wind_speed_ms: 풍속 (m/s)
             wind_dir_deg: 풍향 (0~360도, 북풍=0, 동풍=90, 남풍=180, 서풍=270)
-            court_orientation_deg: 코트 장축 방향 (올림픽공원 기본 약 355도)
-            player_side: 플레이어 위치 ("South": 남쪽 엔드에서 북쪽을 바라봄, "North": 북쪽에서 남쪽을 바라봄)
+            court_orientation_deg: 코트 장축 방향 (올림픽공원 실측 117도, ESE)
+            player_side: "West" 서쪽 엔드 / "East" 동쪽 엔드 (South/North는 호환 별칭)
         """
-        # 플레이어가 바라보는 방향각 (Target Heading)
-        heading_deg = court_orientation_deg if player_side == "South" else (court_orientation_deg + 180) % 360
+        heading_deg = cls.player_heading_deg(court_orientation_deg, player_side)
 
         # 바람이 불어오는 방향과 플레이어 시선의 상대 각도
         rel_angle_deg = (wind_dir_deg - heading_deg) % 360
@@ -175,7 +186,7 @@ class TennisPhysicsEngine:
         }
 
     @classmethod
-    def calculate_sun_glare(cls, hour_24: int, court_orientation_deg: float, player_side: str = "South") -> Dict[str, Any]:
+    def calculate_sun_glare(cls, hour_24: int, court_orientation_deg: float, player_side: str = "West") -> Dict[str, Any]:
         """
         시간대별 태양 위치(방위각/고도각 간이 추산) 및 서브 토스 시 눈부심(Sun Glare) 위험도 산출
         """
@@ -188,8 +199,8 @@ class TennisPhysicsEngine:
         # 태양 고도각 (정오에 최대 약 50~65도)
         sun_altitude = math.sin(math.radians((hour_24 - 6) * 15)) * 60
 
-        # 플레이어가 서브 토스 시 올려다보는 방향 (북쪽을 보면 정면 상공=355도, 남쪽을 보면 175도)
-        target_azimuth = court_orientation_deg if player_side == "South" else (court_orientation_deg + 180) % 360
+        # 서브 토스 시선: 서쪽 엔드=117°(오전 태양과 겹침), 동쪽 엔드=297°(오후 태양과 겹침)
+        target_azimuth = cls.player_heading_deg(court_orientation_deg, player_side)
         angle_diff = abs(sun_azimuth - target_azimuth)
         angle_diff = min(angle_diff, 360 - angle_diff)
 

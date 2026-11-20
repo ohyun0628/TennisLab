@@ -23,9 +23,11 @@ if CURR_DIR not in sys.path:
 try:
     from src.engine.physics import TennisPhysicsEngine
     from src.api.weather import OlympicParkWeatherAPI
+    from src.api.kspo_usage import fetch_usage_summary
 except ImportError:
     from engine.physics import TennisPhysicsEngine
     from api.weather import OlympicParkWeatherAPI
+    from api.kspo_usage import fetch_usage_summary
 
 app = FastAPI(
     title="TennisLab REST API",
@@ -60,7 +62,7 @@ class SimulationRequest(BaseModel):
     temperature_c: Optional[float] = None
     humidity_pct: Optional[float] = 50.0
     hour_24: Optional[int] = 14
-    player_side: str = "South"       # "South" or "North"
+    player_side: str = "West"        # "West"/"East" (South/North 호환)
     shot_speed_kmh: float = 90.0
     shot_type: str = "rally"         # "rally" or "serve"
 
@@ -79,7 +81,7 @@ def root():
         "service": "TennisLab Backend API",
         "status": "online",
         "docs": "/docs",
-        "endpoints": ["/api/courts", "/api/weather/live", "/api/simulate", "/api/recommend"]
+        "endpoints": ["/api/courts", "/api/weather/live", "/api/usage", "/api/simulate", "/api/recommend"]
     }
 
 @app.get("/api/courts")
@@ -91,6 +93,11 @@ def get_courts():
 def get_live_weather():
     """기상청 실시간 올림픽공원 기상 실황 반환"""
     return weather_api.fetch_live_weather()
+
+@app.get("/api/usage")
+def get_usage():
+    """한국체육산업개발 테니스장 월별 이용 정보 반환"""
+    return fetch_usage_summary()
 
 @app.post("/api/simulate")
 def simulate_court_physics(req: SimulationRequest):

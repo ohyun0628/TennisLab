@@ -1,0 +1,14 @@
+{
+  "orientation_deg": 117,
+  "opposite_deg": 297,
+  "player_west_faces_deg": 117,
+  "player_east_faces_deg": 297,
+  "note": "공공 API에 코트 방위 필드가 없어 OSM 센터코트 폴리곤 장축을 재고, Esri 위성·KSPO 공식 배치도로 전 코트 동일 축을 확인했다. 장축은 거의 동서(ESE 117° / WNW 297°)이며 옛 355°(남북) 가정은 틀렸다.",
+  "court_numbers": "KSPO 공식 배치도 기준. 1=메인, 5~8=실내, 2~4·9~19=실외.",
+  "sources": [
+    "OSM way 615723982 (센터코트 pitch) 장변 34.7~35.3m, 방위 116.7° / 297.9°",
+    "OSM 실외·실내 건물 변도 동일 회전(약 118° / 28°)",
+    "Esri World Imagery (EPSG:3857, north-up): 실외 전 면이 센터코트와 같은 장축",
+    "https://www.ksponco.or.kr/sports/img/olparktennis/plot_plan.jpg"
+  ]
+}

@@ -13,6 +13,7 @@ from datetime import datetime
 
 from engine.physics import TennisPhysicsEngine
 from api.weather import OlympicParkWeatherAPI
+from api.kspo_usage import CSV_PATH, fetch_usage_summary
 
 # ----------------------------------------------------
 # 1. 페이지 기본 설정 (Page Config)
@@ -115,12 +116,14 @@ else:
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🏃 플레이어 설정")
-player_side = st.sidebar.selectbox(
+player_side = st.sidebar.segmented_control(
     "플레이어 코트 위치",
-    ["South (남쪽 엔드에서 북쪽 공격)", "North (북쪽 엔드에서 남쪽 공격)"],
-    index=0
+    ["서쪽 엔드 (117°)", "동쪽 엔드 (297°)"],
+    default="서쪽 엔드 (117°)",
+    required=True,
+    key="player_end",
 )
-player_side_key = "South" if "South" in player_side else "North"
+player_side_key = "West" if player_side.startswith("서쪽") else "East"
 
 shot_type = st.sidebar.selectbox(
     "시뮬레이션 타구 유형",
@@ -149,7 +152,10 @@ with col_court_info:
     is_indoor = selected_court["has_roof"]
     badge_html = '<span class="badge-indoor">실내 코트 (전천후)</span>' if is_indoor else '<span class="badge-outdoor">실외 하드코트</span>'
     st.markdown(f"**선택 코트**: {selected_court['name']} {badge_html}", unsafe_allow_html=True)
-    st.markdown(f"**코트 특성**: {selected_court['description']} (방위각: {selected_court['orientation_deg']}°)")
+    st.markdown(
+        f"**코트 특성**: {selected_court['description']} "
+        f"(장축 방위각: {selected_court['orientation_deg']}° · OSM·위성 실측, 공공 API 없음)"
+    )
 
 # ----------------------------------------------------
 # 6. 물리 엔진 연산 (Physics Engine Calculation)
@@ -254,7 +260,7 @@ with col_viz1:
                   line=dict(color="#FCD34D", width=4, dash="solid"))
 
     # 플레이어 위치 마커
-    player_y = -11.5 if player_side_key == "South" else 11.5
+    player_y = -11.5 if player_side_key == "West" else 11.5
     fig.add_trace(go.Scatter(
         x=[0], y=[player_y],
         mode="markers+text",
@@ -264,7 +270,7 @@ with col_viz1:
     ))
 
     # 목표 착지점 (기준: 반대편 베이스라인 안쪽)
-    target_y = 9.5 if player_side_key == "South" else -9.5
+    target_y = 9.5 if player_side_key == "West" else -9.5
     fig.add_trace(go.Scatter(
         x=[0], y=[target_y],
         mode="markers",
@@ -348,24 +354,26 @@ with st.container():
     """, unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 10. 한국체육산업개발 테니스장 예약 모니터링 현황 (Mock / Live)
+# 10. 한국체육산업개발 테니스장 이용 정보 (공공데이터)
 # ----------------------------------------------------
 st.markdown("---")
-st.markdown("### 📅 올림픽 테니스장 실시간 예약 및 코트 가동률 모니터링")
-st.caption("한국체육산업개발 테니스장 예약 현황 공공데이터 연계")
+st.markdown("### 올림픽 테니스장 이용 정보")
+st.caption("한국체육산업개발 공공데이터 (data.go.kr 15133891). 코트별 실시간 예약 슬롯은 공개되지 않아 공식 예약 사이트로 연결합니다.")
 
-schedule_data = []
-for c in courts_data:
-    # 실내/실외별 가상의 가동률 및 예약 상태
-    is_roof = c["has_roof"]
-    status = "예약 마감" if c["court_id"] in [1, 2, 5, 16, 17] else ("취소표 발생 (18:00)" if c["court_id"] == 4 else "예약 가능")
-    schedule_data.append({
-        "코트 번호": f"코트 {c['court_id']}",
-        "이름": c["name"],
-        "구분": "실내" if is_roof else "실외",
-        "금일 예약 상태": status,
-        "특이사항": "바람 영향 없음" if is_roof else f"풍속 {wind_speed}m/s 영향"
-    })
+@st.cache_data(ttl=3600)
+def load_kspo_usage():
+    return fetch_usage_summary()
 
-df_schedule = pd.DataFrame(schedule_data)
-st.dataframe(df_schedule, use_container_width=True, hide_index=True)
+usage = load_kspo_usage()
+if usage.get("is_live"):
+    col_u1, col_u2, col_u3 = st.columns(3)
+    yoy = usage.get("yoy_pct")
+    col_u1.metric("일일입장", f"{usage['daily_visitors']:,}명", usage.get("busy_label"))
+    col_u2.metric("월회원", f"{usage['monthly_members']:,}명")
+    col_u3.metric("전년 동월", f"{yoy:+d}%" if yoy is not None else "-", usage.get("period_label"))
+    st.link_button("올림픽테니스장 공식 예약", usage["reserve_url"], width="stretch")
+    if os.path.isfile(CSV_PATH):
+        df_usage = pd.read_csv(CSV_PATH, encoding="cp949")
+        st.dataframe(df_usage, width="stretch", hide_index=True, alt="올림픽공원 테니스장 월별 이용 정보")
+else:
+    st.warning("이용 정보를 불러오지 못했습니다.")

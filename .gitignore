@@ -22,6 +22,12 @@ build/
 .vscode/
 .idea/
 
+# Node / Expo
+node_modules/
+mobile/node_modules/
+.expo/
+mobile/.expo/
+
 # OS generated
 .DS_Store
 Thumbs.db

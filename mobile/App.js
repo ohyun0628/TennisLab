@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,50 +8,89 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
-  Dimensions
+  RefreshControl,
+  Linking
 } from 'react-native';
-
-const { width } = Dimensions.get('window');
+import { bounceFromTemp, decomposeWind, fetchLiveWeather } from './weather';
+import { fetchUsageSummary, RESERVE_URL } from './usage';
 
 // 올림픽공원 19개 코트 기본 메타데이터
 const COURTS = [
-  { id: 1, name: '센터 코트', type: 'stadium', isIndoor: false, desc: '메인 스타디움. 측면 와류 주의.' },
-  { id: 2, name: '2번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 3, name: '3번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 4, name: '4번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 5, name: '5번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 6, name: '6번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 7, name: '7번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 8, name: '8번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 9, name: '9번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 10, name: '10번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 11, name: '11번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 12, name: '12번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 13, name: '13번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 14, name: '14번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 15, name: '15번 코트', type: 'outdoor', isIndoor: false, desc: '실외 일반 하드코트.' },
-  { id: 16, name: '실내 1번', type: 'indoor', isIndoor: true, desc: '실내 전천후 하드코트.' },
-  { id: 17, name: '실내 2번', type: 'indoor', isIndoor: true, desc: '실내 전천후 하드코트.' },
-  { id: 18, name: '실내 3번', type: 'indoor', isIndoor: true, desc: '실내 전천후 하드코트.' },
-  { id: 19, name: '실내 4번', type: 'indoor', isIndoor: true, desc: '실내 전천후 하드코트.' }
+  { id: 1, name: '메인 코트', type: 'stadium', isIndoor: false, orientationDeg: 117, desc: '메인 스타디움. 높은 스탠드 와류 주의.' },
+  { id: 2, name: '2번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 회원안내실 인근.' },
+  { id: 3, name: '3번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 회원안내실 인근.' },
+  { id: 4, name: '4번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 회원안내실 인근.' },
+  { id: 5, name: '실내 5번', type: 'indoor', isIndoor: true, orientationDeg: 117, desc: '실내 전천후 하드코트.' },
+  { id: 6, name: '실내 6번', type: 'indoor', isIndoor: true, orientationDeg: 117, desc: '실내 전천후 하드코트.' },
+  { id: 7, name: '실내 7번', type: 'indoor', isIndoor: true, orientationDeg: 117, desc: '실내 전천후 하드코트.' },
+  { id: 8, name: '실내 8번', type: 'indoor', isIndoor: true, orientationDeg: 117, desc: '실내 전천후 하드코트.' },
+  { id: 9, name: '9번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
+  { id: 10, name: '10번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
+  { id: 11, name: '11번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
+  { id: 12, name: '12번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
+  { id: 13, name: '13번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
+  { id: 14, name: '14번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
+  { id: 15, name: '15번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
+  { id: 16, name: '16번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
+  { id: 17, name: '17번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
+  { id: 18, name: '18번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 메인코트 인근.' },
+  { id: 19, name: '19번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 메인코트 인근.' }
 ];
 
 export default function App() {
   const [selectedCourt, setSelectedCourt] = useState(COURTS[0]);
-  const [playerSide, setPlayerSide] = useState('South'); // 'South' or 'North'
+  const [playerSide, setPlayerSide] = useState('West');
   const [weather, setWeather] = useState({
-    temp: 18.5,
-    windSpeed: 3.8,
-    windDir: '북북서 (340°)',
-    humidity: 52
+    temp: null,
+    windSpeed: null,
+    windDir: '--',
+    windDirDeg: 0,
+    humidity: null,
+    timestamp: '',
+    sourceLabel: '올림픽공원 실시간 기상',
+    isLive: false
   });
+  const [usage, setUsage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // 선택된 코트와 바람에 따른 물리 계산 결과 (실내 vs 실외)
+  const loadLiveData = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    try {
+      const [live, usageSummary] = await Promise.all([
+        fetchLiveWeather(),
+        fetchUsageSummary().catch((error) => {
+          console.warn('[App] 이용 정보 불러오기 실패', error);
+          return null;
+        })
+      ]);
+      setWeather(live);
+      if (usageSummary) setUsage(usageSummary);
+    } catch (error) {
+      console.warn('[App] 실시간 데이터 불러오기 실패', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadLiveData();
+    const timer = setInterval(() => loadLiveData(), 10 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, [loadLiveData]);
+
   const isIndoor = selectedCourt.isIndoor;
-  const tailHeadWind = isIndoor ? 0.0 : (playerSide === 'South' ? -3.4 : 3.4);
-  const deltaDistance = isIndoor ? 0 : Math.round(tailHeadWind * 0.75 * 55.0);
-  const cor = 0.742;
-  const bounceHeight = isIndoor ? 1.40 : 1.42;
+  const { tailHeadWind } = decomposeWind(
+    Number(weather.windSpeed) || 0,
+    Number(weather.windDirDeg) || 0,
+    selectedCourt.orientationDeg || 117,
+    playerSide
+  );
+  const liveTailHead = isIndoor ? 0 : tailHeadWind;
+  const deltaDistance = isIndoor ? 0 : Math.round(liveTailHead * 0.75 * 55.0);
+  const bounce = bounceFromTemp(Number(weather.temp) || 18);
+  const bounceHeight = isIndoor ? Number((bounce.bounceHeight - 0.02).toFixed(2)) : bounce.bounceHeight;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -63,31 +102,51 @@ export default function App() {
           <Text style={styles.headerTitle}>🎾 TennisLab Mobile</Text>
           <Text style={styles.headerSubtitle}>올림픽공원 테니스장 실시간 코트 가이드</Text>
         </View>
-        <View style={styles.liveBadge}>
-          <Text style={styles.liveBadgeText}>● LIVE</Text>
+        <View style={[styles.liveBadge, weather.isLive ? styles.liveBadgeOn : styles.liveBadgeOff]}>
+          <Text style={styles.liveBadgeText}>{weather.isLive ? '● LIVE' : '● ...'}</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadLiveData(true)}
+            tintColor="#1E3A8A"
+          />
+        }
+      >
         {/* 기상 요약 카드 */}
         <View style={styles.weatherCard}>
-          <Text style={styles.cardHeaderTitle}>🌤️ 올림픽공원 실시간 기상 (기상청)</Text>
-          <View style={styles.weatherRow}>
-            <View style={styles.weatherItem}>
-              <Text style={styles.weatherLabel}>기온</Text>
-              <Text style={styles.weatherValue}>{weather.temp}℃</Text>
-            </View>
-            <View style={styles.weatherDivider} />
-            <View style={styles.weatherItem}>
-              <Text style={styles.weatherLabel}>풍속</Text>
-              <Text style={styles.weatherValue}>{weather.windSpeed} m/s</Text>
-            </View>
-            <View style={styles.weatherDivider} />
-            <View style={styles.weatherItem}>
-              <Text style={styles.weatherLabel}>풍향</Text>
-              <Text style={styles.weatherValue}>{weather.windDir}</Text>
-            </View>
-          </View>
+          <Text style={styles.cardHeaderTitle}>🌤️ {weather.sourceLabel}</Text>
+          {loading ? (
+            <ActivityIndicator color="#1E3A8A" style={{ marginVertical: 12 }} />
+          ) : (
+            <>
+              <View style={styles.weatherRow}>
+                <View style={styles.weatherItem}>
+                  <Text style={styles.weatherLabel}>기온</Text>
+                  <Text style={styles.weatherValue}>{weather.temp}℃</Text>
+                </View>
+                <View style={styles.weatherDivider} />
+                <View style={styles.weatherItem}>
+                  <Text style={styles.weatherLabel}>풍속</Text>
+                  <Text style={styles.weatherValue}>{weather.windSpeed} m/s</Text>
+                </View>
+                <View style={styles.weatherDivider} />
+                <View style={styles.weatherItem}>
+                  <Text style={styles.weatherLabel}>풍향</Text>
+                  <Text style={styles.weatherValue}>{weather.windDir}</Text>
+                </View>
+              </View>
+              <Text style={styles.weatherMeta}>
+                {weather.timestamp ? `${weather.timestamp} 갱신` : '실시간 조회'}
+                {weather.humidity != null ? ` · 습도 ${weather.humidity}%` : ''}
+              </Text>
+            </>
+          )}
         </View>
 
         {/* 19개 코트 가로 스크롤 선택기 */}
@@ -116,23 +175,23 @@ export default function App() {
           })}
         </ScrollView>
 
-        {/* 플레이어 엔드 선택 (South vs North) */}
+        {/* 플레이어 엔드 선택 (West vs East, 장축 117°) */}
         <View style={styles.playerSideRow}>
           <Text style={styles.playerSideLabel}>내 코트 위치:</Text>
           <TouchableOpacity
-            style={[styles.sideButton, playerSide === 'South' && styles.sideButtonActive]}
-            onPress={() => setPlayerSide('South')}
+            style={[styles.sideButton, playerSide === 'West' && styles.sideButtonActive]}
+            onPress={() => setPlayerSide('West')}
           >
-            <Text style={[styles.sideButtonText, playerSide === 'South' && styles.sideButtonTextActive]}>
-              남쪽 (North 공격)
+            <Text style={[styles.sideButtonText, playerSide === 'West' && styles.sideButtonTextActive]}>
+              서쪽 (117°)
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.sideButton, playerSide === 'North' && styles.sideButtonActive]}
-            onPress={() => setPlayerSide('North')}
+            style={[styles.sideButton, playerSide === 'East' && styles.sideButtonActive]}
+            onPress={() => setPlayerSide('East')}
           >
-            <Text style={[styles.sideButtonText, playerSide === 'North' && styles.sideButtonTextActive]}>
-              북쪽 (South 공격)
+            <Text style={[styles.sideButtonText, playerSide === 'East' && styles.sideButtonTextActive]}>
+              동쪽 (297°)
             </Text>
           </TouchableOpacity>
         </View>
@@ -146,17 +205,19 @@ export default function App() {
             </View>
           </View>
 
-          <Text style={styles.physicsDesc}>{selectedCourt.desc}</Text>
+          <Text style={styles.physicsDesc}>
+            {selectedCourt.desc} 장축 {selectedCourt.orientationDeg}° (OSM·위성 실측)
+          </Text>
 
           {/* 주요 지표 3열 그리드 */}
           <View style={styles.metricGrid}>
             <View style={styles.metricBox}>
               <Text style={styles.metricLabel}>체감 유효 바람</Text>
               <Text style={[styles.metricValue, { color: isIndoor ? '#10B981' : '#2563EB' }]}>
-                {isIndoor ? '0.0 m/s' : `${tailHeadWind > 0 ? '+' : ''}${tailHeadWind}m/s`}
+                {isIndoor ? '0.0 m/s' : `${liveTailHead > 0 ? '+' : ''}${liveTailHead.toFixed(1)}m/s`}
               </Text>
               <Text style={styles.metricSub}>
-                {isIndoor ? '바람 차단' : (tailHeadWind > 0 ? '뒷바람 (밀어줌)' : '맞바람 (저항)')}
+                {isIndoor ? '바람 차단' : (Math.abs(liveTailHead) < 0.5 ? '미풍' : (liveTailHead > 0 ? '뒷바람 (밀어줌)' : '맞바람 (저항)'))}
               </Text>
             </View>
 
@@ -173,7 +234,7 @@ export default function App() {
             <View style={styles.metricBox}>
               <Text style={styles.metricLabel}>바운스 높이</Text>
               <Text style={[styles.metricValue, { color: '#8B5CF6' }]}>{bounceHeight}m</Text>
-              <Text style={styles.metricSub}>Medium 코트</Text>
+              <Text style={styles.metricSub}>{bounce.paceLabel}</Text>
             </View>
           </View>
         </View>
@@ -189,17 +250,53 @@ export default function App() {
             <>
               <View style={styles.tacticItem}>
                 <Text style={styles.tacticText}>
-                  {tailHeadWind < 0
+                  {Math.abs(liveTailHead) < 0.5
+                    ? '🍃 [미풍]: 바람 영향이 작습니다. 평소 타점과 궤적으로 안정적으로 플레이하세요.'
+                    : liveTailHead < 0
                     ? '🌪️ [맞바람]: 공이 덜 날아갑니다. 타점을 평소보다 10cm 높이고 깊은 탑스핀으로 네트 여유를 확보하세요.'
                     : '🚀 [뒷바람]: 공이 길게 나갑니다. 무리한 풀스윙을 피하고 숏 앵글이나 슬라이스 드롭샷을 적극 활용하세요.'}
                 </Text>
               </View>
               <View style={styles.tacticItem}>
-                <Text style={styles.tacticText}>⚡ [하드코트]: 낮 기온 상승으로 반발력이 좋아 라이징 볼 타격 전술이 효과적입니다.</Text>
+                <Text style={styles.tacticText}>
+                  {bounce.cor >= 0.76
+                    ? '⚡ [고탄성 바운스]: 코트 반발력이 좋아 라이징 볼 타격이 효과적입니다.'
+                    : bounce.cor <= 0.72
+                    ? '❄️ [저탄성 바운스]: 기온이 낮아 공이 낮게 튑니다. 무릎을 굽히고 낮은 타점에 대비하세요.'
+                    : '🎾 [표준 바운스]: 평소 연습한 타점 높이로 플레이하세요.'}
+                </Text>
               </View>
             </>
           )}
         </View>
+
+        {/* 한국체육산업개발 이용 정보 */}
+        {usage ? (
+          <View style={styles.usageCard}>
+            <Text style={styles.cardHeaderTitle}>📅 {usage.sourceLabel}</Text>
+            <Text style={styles.usagePeriod}>{usage.periodLabel} 공식 이용 통계</Text>
+            <View style={styles.weatherRow}>
+              <View style={styles.weatherItem}>
+                <Text style={styles.weatherLabel}>일일입장</Text>
+                <Text style={styles.weatherValue}>{usage.dailyLabel}</Text>
+              </View>
+              <View style={styles.weatherDivider} />
+              <View style={styles.weatherItem}>
+                <Text style={styles.weatherLabel}>월회원</Text>
+                <Text style={styles.weatherValue}>{usage.memberLabel}</Text>
+              </View>
+              <View style={styles.weatherDivider} />
+              <View style={styles.weatherItem}>
+                <Text style={styles.weatherLabel}>혼잡도</Text>
+                <Text style={styles.weatherValue}>{usage.busyLabel}</Text>
+              </View>
+            </View>
+            <Text style={styles.weatherMeta}>{usage.yoyLabel}</Text>
+            <TouchableOpacity style={styles.reserveButton} onPress={() => Linking.openURL(RESERVE_URL)}>
+              <Text style={styles.reserveButtonText}>올림픽테니스장 공식 예약하기</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         {/* 푸터 */}
         <View style={styles.footer}>
@@ -235,11 +332,15 @@ const styles = StyleSheet.create({
     marginTop: 2
   },
   liveBadge: {
-    backgroundColor: '#DC2626',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRaduis: 12,
     borderRadius: 8
+  },
+  liveBadgeOn: {
+    backgroundColor: '#DC2626'
+  },
+  liveBadgeOff: {
+    backgroundColor: '#6B7280'
   },
   liveBadgeText: {
     color: '#FFFFFF',
@@ -287,6 +388,12 @@ const styles = StyleSheet.create({
     width: 1,
     height: 30,
     backgroundColor: '#E5E7EB'
+  },
+  weatherMeta: {
+    marginTop: 10,
+    fontSize: 11,
+    color: '#9CA3AF',
+    textAlign: 'center'
   },
   sectionTitle: {
     fontSize: 15,
@@ -433,7 +540,35 @@ const styles = StyleSheet.create({
     padding: 16,
     borderLeftWidth: 4,
     borderLeftColor: '#3B82F6',
-    marginBottom: 24
+    marginBottom: 16
+  },
+  usageCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2
+  },
+  usagePeriod: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 12
+  },
+  reserveButton: {
+    marginTop: 14,
+    backgroundColor: '#1E3A8A',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center'
+  },
+  reserveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold'
   },
   tacticsHeader: {
     fontSize: 15,

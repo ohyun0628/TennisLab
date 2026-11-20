@@ -1,22 +1,19 @@
-# 📱 TennisLab Mobile Client (React Native Expo)
+# TennisLab Mobile (Expo)
 
-한국체육산업개발 올림픽공원 테니스장 실시간 코트 동역학 모바일 앱 클라이언트입니다.
+올림픽공원 테니스장 실시간 기상·코트 축 가이드. 웹과 같은 데이터(기상청 실황, 장축 117°, 월별 이용, 공식 예약)를 폰에서 봅니다.
 
----
+## 실행
 
-## 🚀 실행 방법
-
-### 1) 패키지 설치
 ```bash
 cd mobile
 npm install
-```
-
-### 2) Expo 개발 서버 실행
-```bash
 npx expo start
 ```
 
-### 3) 스마트폰에서 확인
-* 스마트폰에 **Expo Go** 앱 (iOS App Store / Android Google Play)을 설치합니다.
-* 터미널에 나타난 **QR 코드**를 스마트폰 카메라 또는 Expo Go 앱으로 스캔하면 스마트폰에서 즉시 실행됩니다!
+1. 스마트폰에 **Expo Go (SDK 58)** 을 설치합니다.
+2. 폰과 PC를 같은 Wi-Fi에 둡니다.
+3. 터미널 QR을 Expo Go로 스캔합니다.
+
+`mobile/.env`에 `EXPO_PUBLIC_KMA_KEY=` (data.go.kr 일반 인증키)를 넣습니다. 이 파일은 git에 올리지 않습니다.
+
+스토어 Expo Go는 SDK 58만 지원합니다. 예전 SDK 51 프로젝트는 QR을 찍으면 바로 닫힙니다.

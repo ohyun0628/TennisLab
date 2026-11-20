@@ -6,9 +6,38 @@ Weather API Module for TennisLab
 기상청 격자 좌표: X=62, Y=125
 """
 
-import requests
+import os
 import datetime
 from typing import Dict, Any, Optional
+
+import requests
+
+
+def _read_env_file(path: str) -> dict:
+    values = {}
+    if not os.path.isfile(path):
+        return values
+    with open(path, encoding="utf-8") as handle:
+        for raw in handle:
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
+
+
+def _load_service_key() -> Optional[str]:
+    key = os.environ.get("KMA_SERVICE_KEY") or os.environ.get("EXPO_PUBLIC_KMA_KEY")
+    if key:
+        return key
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    for env_path in (os.path.join(root, ".env"), os.path.join(root, "mobile", ".env")):
+        values = _read_env_file(env_path)
+        key = values.get("KMA_SERVICE_KEY") or values.get("EXPO_PUBLIC_KMA_KEY")
+        if key:
+            return key
+    return None
 
 
 class OlympicParkWeatherAPI:
@@ -20,15 +49,16 @@ class OlympicParkWeatherAPI:
     LATITUDE = 37.5208
     LONGITUDE = 127.1215
 
-    # 기상청 단기예보 엔드포인트
-    BASE_URL = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst"
+    # 기상청 초단기실황 엔드포인트
+    BASE_URL = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst"
+    OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
     def __init__(self, service_key: Optional[str] = None):
-        self.service_key = service_key
+        self.service_key = service_key or _load_service_key()
 
     def fetch_live_weather(self) -> Dict[str, Any]:
         """
-        기상청 실시간 초단기 실황 조회 (API 키 없을 시 정밀 디폴트 실황 반환)
+        기상청 초단기실황 조회. 키가 없으면 올림픽공원 좌표 실시간 관측을 사용합니다.
         """
         now = datetime.datetime.now()
         base_date = now.strftime("%Y%m%d")
@@ -51,11 +81,17 @@ class OlympicParkWeatherAPI:
                 if response.status_code == 200:
                     data = response.json()
                     items = data.get("response", {}).get("body", {}).get("items", {}).get("item", [])
-                    return self._parse_kma_items(items, now)
+                    if items:
+                        parsed = self._parse_kma_items(items, now)
+                        parsed["source"] = "kma"
+                        return parsed
             except Exception as e:
-                print(f"[WeatherAPI] 실시간 API 호출 실패, 시뮬레이션 모드로 전환: {e}")
+                print(f"[WeatherAPI] 기상청 API 호출 실패, 실시간 관측으로 전환: {e}")
 
-        # API 키가 없거나 호출 실패 시 현실적인 서울 올림픽공원 실황 반환
+        live = self._fetch_open_meteo(now)
+        if live:
+            return live
+
         return self._generate_realistic_fallback(now)
 
     def _parse_kma_items(self, items: list, now: datetime.datetime) -> Dict[str, Any]:
@@ -67,7 +103,8 @@ class OlympicParkWeatherAPI:
             "wind_dir_deg": 350.0,
             "humidity_pct": 55.0,
             "rain_1h_mm": 0.0,
-            "is_live_api": True
+            "is_live_api": True,
+            "source": "kma"
         }
         for item in items:
             cat = item.get("category")
@@ -111,5 +148,36 @@ class OlympicParkWeatherAPI:
             "wind_dir_deg": wind_dir,
             "humidity_pct": humidity,
             "rain_1h_mm": 0.0,
-            "is_live_api": False
+            "is_live_api": False,
+            "source": "fallback"
         }
+
+    def _fetch_open_meteo(self, now: datetime.datetime) -> Optional[Dict[str, Any]]:
+        """올림픽공원 좌표 실시간 관측 (기상청 키 없을 때 사용)"""
+        try:
+            params = {
+                "latitude": self.LATITUDE,
+                "longitude": self.LONGITUDE,
+                "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation",
+                "wind_speed_unit": "ms",
+                "timezone": "Asia/Seoul"
+            }
+            response = requests.get(self.OPEN_METEO_URL, params=params, timeout=5)
+            if response.status_code != 200:
+                return None
+            current = response.json().get("current") or {}
+            if "temperature_2m" not in current:
+                return None
+            return {
+                "timestamp": str(current.get("time", now.strftime("%Y-%m-%d %H:%M"))).replace("T", " "),
+                "temperature_c": round(float(current["temperature_2m"]), 1),
+                "wind_speed_ms": round(float(current.get("wind_speed_10m", 0)), 1),
+                "wind_dir_deg": float(current.get("wind_direction_10m", 0)),
+                "humidity_pct": float(current.get("relative_humidity_2m", 0)),
+                "rain_1h_mm": float(current.get("precipitation", 0)),
+                "is_live_api": True,
+                "source": "open-meteo"
+            }
+        except Exception as e:
+            print(f"[WeatherAPI] Open-Meteo 호출 실패: {e}")
+            return None
