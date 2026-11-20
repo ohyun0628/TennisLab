@@ -16,25 +16,25 @@ import { fetchUsageSummary, RESERVE_URL } from './usage';
 
 // 올림픽공원 19개 코트 기본 메타데이터
 const COURTS = [
-  { id: 1, name: '메인 코트', type: 'stadium', isIndoor: false, orientationDeg: 117, desc: '메인 스타디움. 높은 스탠드 와류 주의.' },
-  { id: 2, name: '2번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 회원안내실 인근.' },
-  { id: 3, name: '3번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 회원안내실 인근.' },
-  { id: 4, name: '4번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 회원안내실 인근.' },
-  { id: 5, name: '실내 5번', type: 'indoor', isIndoor: true, orientationDeg: 117, desc: '실내 전천후 하드코트.' },
-  { id: 6, name: '실내 6번', type: 'indoor', isIndoor: true, orientationDeg: 117, desc: '실내 전천후 하드코트.' },
-  { id: 7, name: '실내 7번', type: 'indoor', isIndoor: true, orientationDeg: 117, desc: '실내 전천후 하드코트.' },
-  { id: 8, name: '실내 8번', type: 'indoor', isIndoor: true, orientationDeg: 117, desc: '실내 전천후 하드코트.' },
-  { id: 9, name: '9번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
-  { id: 10, name: '10번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
-  { id: 11, name: '11번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
-  { id: 12, name: '12번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
-  { id: 13, name: '13번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
-  { id: 14, name: '14번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
-  { id: 15, name: '15번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
-  { id: 16, name: '16번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
-  { id: 17, name: '17번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 도로변 동측.' },
-  { id: 18, name: '18번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 메인코트 인근.' },
-  { id: 19, name: '19번 코트', type: 'outdoor', isIndoor: false, orientationDeg: 117, desc: '실외 하드코트. 메인코트 인근.' }
+  { id: 1, name: '메인 코트', zone: 'stadium', zoneLabel: '스타디움', isIndoor: false, orientationDeg: 117, windExposure: 0.75, desc: '스탠드 차폐 가정 ×0.75. 측면 와류 주의.' },
+  { id: 2, name: '2번 코트', zone: 'desk', zoneLabel: '안내실 인근', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '실외. 장축 117°. 기상청 바람을 그대로 씁니다.' },
+  { id: 3, name: '3번 코트', zone: 'desk', zoneLabel: '안내실 인근', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '실외. 장축 117°. 기상청 바람을 그대로 씁니다.' },
+  { id: 4, name: '4번 코트', zone: 'desk', zoneLabel: '안내실 인근', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '실외. 장축 117°. 기상청 바람을 그대로 씁니다.' },
+  { id: 5, name: '실내 5번', zone: 'indoor', zoneLabel: '실내', isIndoor: true, orientationDeg: 117, windExposure: 0, desc: '바람·직사광선 없음.' },
+  { id: 6, name: '실내 6번', zone: 'indoor', zoneLabel: '실내', isIndoor: true, orientationDeg: 117, windExposure: 0, desc: '바람·직사광선 없음.' },
+  { id: 7, name: '실내 7번', zone: 'indoor', zoneLabel: '실내', isIndoor: true, orientationDeg: 117, windExposure: 0, desc: '바람·직사광선 없음.' },
+  { id: 8, name: '실내 8번', zone: 'indoor', zoneLabel: '실내', isIndoor: true, orientationDeg: 117, windExposure: 0, desc: '바람·직사광선 없음.' },
+  { id: 9, name: '9번 코트', zone: 'roadside', zoneLabel: '도로변', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '열린 실외. 도로 바람·소음.' },
+  { id: 10, name: '10번 코트', zone: 'roadside', zoneLabel: '도로변', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '열린 실외. 도로 바람·소음.' },
+  { id: 11, name: '11번 코트', zone: 'roadside', zoneLabel: '도로변', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '열린 실외. 도로 바람·소음.' },
+  { id: 12, name: '12번 코트', zone: 'roadside', zoneLabel: '도로변', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '열린 실외. 도로 바람·소음.' },
+  { id: 13, name: '13번 코트', zone: 'roadside', zoneLabel: '도로변', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '열린 실외. 도로 바람·소음.' },
+  { id: 14, name: '14번 코트', zone: 'roadside', zoneLabel: '도로변', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '열린 실외. 도로 바람·소음.' },
+  { id: 15, name: '15번 코트', zone: 'roadside', zoneLabel: '도로변', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '열린 실외. 도로 바람·소음.' },
+  { id: 16, name: '16번 코트', zone: 'roadside', zoneLabel: '도로변', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '열린 실외. 도로 바람·소음.' },
+  { id: 17, name: '17번 코트', zone: 'roadside', zoneLabel: '도로변', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '열린 실외. 도로 바람·소음.' },
+  { id: 18, name: '18번 코트', zone: 'near_main', zoneLabel: '메인 인근', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '실외. 장축 117°.' },
+  { id: 19, name: '19번 코트', zone: 'near_main', zoneLabel: '메인 인근', isIndoor: false, orientationDeg: 117, windExposure: 1, desc: '실외. 장축 117°.' }
 ];
 
 export default function App() {
@@ -81,8 +81,9 @@ export default function App() {
   }, [loadLiveData]);
 
   const isIndoor = selectedCourt.isIndoor;
+  const windExposure = selectedCourt.windExposure ?? (isIndoor ? 0 : 1);
   const { tailHeadWind } = decomposeWind(
-    Number(weather.windSpeed) || 0,
+    (Number(weather.windSpeed) || 0) * windExposure,
     Number(weather.windDirDeg) || 0,
     selectedCourt.orientationDeg || 117,
     playerSide
@@ -168,7 +169,7 @@ export default function App() {
                   {court.name}
                 </Text>
                 <Text style={[styles.courtChipSub, isSelected && styles.courtChipTextSelected]}>
-                  {court.isIndoor ? '실내' : (court.id === 1 ? '스타디움' : '실외')}
+                  {court.zoneLabel}
                 </Text>
               </TouchableOpacity>
             );
@@ -201,12 +202,12 @@ export default function App() {
           <View style={styles.physicsHeader}>
             <Text style={styles.physicsTitle}>{selectedCourt.name} 동역학 분석</Text>
             <View style={[styles.badge, isIndoor ? styles.badgeIndoor : styles.badgeOutdoor]}>
-              <Text style={styles.badgeText}>{isIndoor ? '실내 코트' : '실외 하드'}</Text>
+              <Text style={styles.badgeText}>{selectedCourt.zoneLabel}</Text>
             </View>
           </View>
 
           <Text style={styles.physicsDesc}>
-            {selectedCourt.desc} 장축 {selectedCourt.orientationDeg}° (OSM·위성 실측)
+            {selectedCourt.desc} 장축 {selectedCourt.orientationDeg}°
           </Text>
 
           {/* 주요 지표 3열 그리드 */}
@@ -241,13 +242,33 @@ export default function App() {
 
         {/* AI 전술 가이드 */}
         <View style={styles.tacticsCard}>
-          <Text style={styles.tacticsHeader}>🧠 AI 전술 브리핑</Text>
+          <Text style={styles.tacticsHeader}>플레이 가이드</Text>
           {isIndoor ? (
             <View style={styles.tacticItem}>
-              <Text style={styles.tacticText}>• 실내 코트는 바람 영향이 0이므로, 평소 연습한 표준 타점과 정교한 앵글 샷 전술을 구사하세요.</Text>
+              <Text style={styles.tacticText}>• 실내는 유효 바람이 0입니다. 강풍 날 안정 코트로 안내합니다.</Text>
             </View>
           ) : (
             <>
+              {selectedCourt.zone === 'stadium' ? (
+                <View style={styles.tacticItem}>
+                  <Text style={styles.tacticText}>• 스타디움: 스탠드 차폐 가정(×0.75). 측면 와류 주의.</Text>
+                </View>
+              ) : null}
+              {selectedCourt.zone === 'roadside' ? (
+                <View style={styles.tacticItem}>
+                  <Text style={styles.tacticText}>• 도로변: 장축은 117°. 도로 바람·소음이 큽니다.</Text>
+                </View>
+              ) : null}
+              {selectedCourt.zone === 'desk' ? (
+                <View style={styles.tacticItem}>
+                  <Text style={styles.tacticText}>• 안내실 인근: 장축 117°. 기상청 바람을 그대로 씁니다.</Text>
+                </View>
+              ) : null}
+              {selectedCourt.zone === 'near_main' ? (
+                <View style={styles.tacticItem}>
+                  <Text style={styles.tacticText}>• 메인 인근: 장축 117°. 실외 일반 코트입니다.</Text>
+                </View>
+              ) : null}
               <View style={styles.tacticItem}>
                 <Text style={styles.tacticText}>
                   {Math.abs(liveTailHead) < 0.5

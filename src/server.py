@@ -170,31 +170,25 @@ def simulate_court_physics(req: SimulationRequest):
 
 @app.post("/api/recommend")
 def recommend_court(req: RecommendRequest):
-    """
-    플레이어 수준(1: 초보, 2: 중급, 3: 상급)에 따른 19개 코트 적합도 스코어링 및 Top 3 추천
-    """
+    """규칙 기반 안내. 학습 모델이 아닙니다. 강풍이면 실내를 앞에 둡니다."""
     live = weather_api.fetch_live_weather()
     w_speed = req.wind_speed_ms if req.wind_speed_ms is not None else live["wind_speed_ms"]
     temp = req.temperature_c if req.temperature_c is not None else live["temperature_c"]
 
     scored_courts = []
     for c in COURTS_DATA:
-        score = 80.0
-        if c["has_roof"]:
-            # 실내 코트는 초보자일수록 가산점
-            score = 96.0 if req.player_skill == 1 else (91.0 if req.player_skill == 2 else 88.0)
+        exposure = float(c.get("wind_exposure", 0.0 if c.get("has_roof") else 1.0))
+        felt = w_speed * exposure
+        if exposure <= 0:
+            score = 92.0 if req.player_skill == 1 else 84.0
         else:
-            # 실외 코트는 바람에 따른 감점
-            penalty = w_speed * (4.5 if req.player_skill == 1 else (2.5 if req.player_skill == 2 else 1.2))
-            score -= penalty
-            if c["court_id"] == 1 and req.player_skill == 3:
-                score += 10.0 # 상급자 센터코트 보너스
-
+            penalty = felt * (4.5 if req.player_skill == 1 else (2.5 if req.player_skill == 2 else 1.2))
+            score = 80.0 - penalty
         score = round(max(30.0, min(99.0, score)), 1)
         scored_courts.append({
             "court_id": c["court_id"],
             "name": c["name"],
-            "type": "실내" if c["has_roof"] else "실외",
+            "type": c.get("zone_label") or ("실내" if c["has_roof"] else "실외"),
             "score": score
         })
 

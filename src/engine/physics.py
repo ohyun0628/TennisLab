@@ -224,22 +224,30 @@ class TennisPhysicsEngine:
         """
         모든 환경 요인을 종합한 AI 플레이어 맞춤형 전술 브리핑
         """
-        # 실내 코트인 경우
-        if court_info.get("has_roof", False):
+        zone = court_info.get("zone", "outdoor")
+        if court_info.get("has_roof", False) or zone == "indoor":
             return {
-                "court_status": "실내 코트 (Indoor)",
-                "summary": "외부 바람과 직사광선이 완전히 차단된 전천후 코트입니다.",
+                "court_status": "실내 코트",
+                "summary": "외부 바람과 직사광선이 차단된 전천후 코트입니다.",
                 "tactics": [
-                    "바람 영향이 0이므로 평소 연습한 표준 타점과 궤적으로 경기하세요.",
-                    f"현재 실내 기온 기준 바운스는 '{bounce['court_pace_label']}' 상태입니다.",
-                    "날씨 변수 없이 순수 서브 앤 발리 및 정교한 앵글 샷 전술을 추천합니다."
+                    "유효 바람은 0입니다. 평소 타점과 궤적으로 치세요.",
+                    f"실내 기온 기준 바운스는 '{bounce['court_pace_label']}' 입니다.",
+                    "강풍·눈부심이 없는 날의 안정 코트로 안내합니다."
                 ],
-                "recommended_side": "어느 사이드든 동일"
+                "recommended_side": "어느 엔드든 같습니다"
             }
 
         tactics = []
         tail_head = wind_decomp["tail_head_wind_ms"]
         cross = wind_decomp["cross_wind_ms"]
+        if zone == "stadium":
+            tactics.append("🏟️ [메인 스타디움]: 스탠드가 열린 바람을 일부 막습니다(간이 ×0.75). 측면 와류가 있어 네트 근처 볼이 흔들릴 수 있습니다.")
+        elif zone == "roadside":
+            tactics.append("🚗 [도로변]: 장축은 117°로 같습니다. 도로 쪽 열린 바람과 차량 소음이 큽니다. 토스·리턴 리듬을 짧게 가져가세요.")
+        elif zone == "desk":
+            tactics.append("📍 [회원안내실 인근]: 실외 일반 코트입니다. 장축 117°, 바람은 기상청 실황을 그대로 씁니다.")
+        elif zone == "near_main":
+            tactics.append("📍 [메인코트 인근]: 실외 일반 코트입니다. 장축 117°, 바람은 기상청 실황을 그대로 씁니다.")
 
         # 1. 바람 전술
         if tail_head <= -1.0:

@@ -92,3 +92,10 @@ def fetch_usage_summary() -> Dict[str, Any]:
         "busy_label": busy,
         "reserve_url": RESERVE_URL
     }
+
+
+def fetch_daily_series(year: int = 2025) -> List[Dict[str, Any]]:
+    items = _from_api() or _from_csv()
+    rows = [item for item in items if item["type"] == "일일입장" and item["year"] == year]
+    rows.sort(key=lambda item: item["month"])
+    return [{"month": f"{item['month']}월", "일일입장": item["count"]} for item in rows]

@@ -13,7 +13,7 @@ from datetime import datetime
 
 from engine.physics import TennisPhysicsEngine
 from api.weather import OlympicParkWeatherAPI
-from api.kspo_usage import CSV_PATH, fetch_usage_summary
+from api.kspo_usage import fetch_daily_series, fetch_usage_summary
 
 # ----------------------------------------------------
 # 1. 페이지 기본 설정 (Page Config)
@@ -136,32 +136,62 @@ shot_type_key = "rally" if "랠리" in shot_type else "serve"
 # ----------------------------------------------------
 # 4. 메인 대시보드 헤더
 # ----------------------------------------------------
-st.markdown('<div class="main-title">🎾 TennisLab: 올림픽공원 테니스장 코트 동역학 플랫폼</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">한국체육산업개발 공공데이터와 기상청 초단기 실황 API를 결합한 실시간 코트별 환경 시뮬레이션 및 데이터 기반 플레이 가이드</div>', unsafe_allow_html=True)
+st.title("TennisLab")
+st.caption("올림픽공원 테니스장 · 오늘 이 코트에서 바람이 어떻게 치는지. 장축은 전 코트 117°이며, 차이는 실내·메인·도로변·엔드입니다.")
 
 # ----------------------------------------------------
 # 5. 코트 선택기
 # ----------------------------------------------------
+ZONE_FILTERS = {
+    "전체": None,
+    "메인": "stadium",
+    "실내": "indoor",
+    "도로변": "roadside",
+    "안내실 인근": "desk",
+    "메인 인근": "near_main",
+}
+zone_filter = st.segmented_control(
+    "구역",
+    list(ZONE_FILTERS.keys()),
+    default="전체",
+    required=True,
+    key="zone_filter",
+)
+wanted_zone = ZONE_FILTERS[zone_filter]
+filtered_keys = [
+    key for key, court in courts_dict.items()
+    if wanted_zone is None or court.get("zone") == wanted_zone
+]
+if not filtered_keys:
+    filtered_keys = list(courts_dict.keys())
+if st.session_state.get("court_select") not in filtered_keys:
+    st.session_state.court_select = filtered_keys[0]
+
 col_court_sel, col_court_info = st.columns([1.5, 2.5])
 
 with col_court_sel:
-    selected_court_name = st.selectbox("🎯 분석할 코트를 선택하세요 (총 19개 코트)", list(courts_dict.keys()), index=0)
+    selected_court_name = st.selectbox(
+        "분석할 코트",
+        filtered_keys,
+        key="court_select",
+    )
     selected_court = courts_dict[selected_court_name]
 
 with col_court_info:
     is_indoor = selected_court["has_roof"]
-    badge_html = '<span class="badge-indoor">실내 코트 (전천후)</span>' if is_indoor else '<span class="badge-outdoor">실외 하드코트</span>'
-    st.markdown(f"**선택 코트**: {selected_court['name']} {badge_html}", unsafe_allow_html=True)
-    st.markdown(
-        f"**코트 특성**: {selected_court['description']} "
-        f"(장축 방위각: {selected_court['orientation_deg']}° · OSM·위성 실측, 공공 API 없음)"
-    )
+    badge_color = "green" if is_indoor else ("orange" if selected_court.get("zone") == "stadium" else "blue")
+    st.badge(selected_court.get("zone_label", "실외"), color=badge_color)
+    st.markdown(f"**{selected_court['name']}** · 장축 {selected_court['orientation_deg']}°")
+    st.caption(selected_court.get("difference") or selected_court.get("description", ""))
+    if selected_court.get("zone") == "stadium":
+        st.caption("유효 바람은 스탠드 차폐 가정(×0.75)을 곱합니다. 측정값이 아닙니다.")
 
 # ----------------------------------------------------
 # 6. 물리 엔진 연산 (Physics Engine Calculation)
 # ----------------------------------------------------
+effective_wind = wind_speed * float(selected_court.get("wind_exposure", 0.0 if selected_court["has_roof"] else 1.0))
 wind_decomp = TennisPhysicsEngine.decompose_wind(
-    wind_speed_ms=wind_speed,
+    wind_speed_ms=effective_wind,
     wind_dir_deg=wind_dir,
     court_orientation_deg=selected_court["orientation_deg"],
     player_side=player_side_key
@@ -179,11 +209,14 @@ bounce = TennisPhysicsEngine.calculate_court_bounce(
     humidity_pct=humidity
 )
 
-glare = TennisPhysicsEngine.calculate_sun_glare(
-    hour_24=hour,
-    court_orientation_deg=selected_court["orientation_deg"],
-    player_side=player_side_key
-)
+if is_indoor:
+    glare = {"sun_visible": False, "glare_risk": "없음 (실내)"}
+else:
+    glare = TennisPhysicsEngine.calculate_sun_glare(
+        hour_24=hour,
+        court_orientation_deg=selected_court["orientation_deg"],
+        player_side=player_side_key
+    )
 
 tactics = TennisPhysicsEngine.generate_tactical_briefing(
     wind_decomp=wind_decomp,
@@ -307,7 +340,7 @@ with col_viz1:
         plot_bgcolor="#1E293B",
         showlegend=True
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch", alt="선택한 코트 탑뷰와 바람 편차 착지점")
 
 with col_viz2:
     st.markdown("#### 🧭 유효 풍향 레이더 & 눈부심")
@@ -315,12 +348,12 @@ with col_viz2:
     # 풍향 극좌표계(Polar) 차트
     fig_polar = go.Figure()
     fig_polar.add_trace(go.Scatterpolar(
-        r=[0, wind_speed if not is_indoor else 0],
+        r=[0, effective_wind],
         theta=[0, wind_dir],
         mode="lines+markers",
         line=dict(color="#3B82F6", width=4),
         marker=dict(size=8, color="#1D4D8F"),
-        name="실제 풍향/풍속"
+        name="유효 풍향/풍속"
     ))
     fig_polar.update_layout(
         polar=dict(
@@ -330,7 +363,7 @@ with col_viz2:
         height=320,
         margin=dict(l=20, r=20, t=20, b=20)
     )
-    st.plotly_chart(fig_polar, use_container_width=True)
+    st.plotly_chart(fig_polar, width="stretch", alt="기상청 풍향과 풍속 레이더")
     
     st.markdown(f"**☀️ 서브 시야 눈부심**: `{glare.get('glare_risk', 'None')}`")
     st.markdown(f"**🌡️ 하드코트 체감 상태**: `{bounce['court_pace_label']}` (낙하 바운스: {bounce['bounce_height_m']}m)")
@@ -338,7 +371,7 @@ with col_viz2:
 # ----------------------------------------------------
 # 9. AI 맞춤 전술 가이드
 # ----------------------------------------------------
-st.markdown("### 🧠 AI 전술 브리핑 (Tactical Briefing)")
+st.header("플레이 가이드")
 with st.container():
     st.markdown(f"""
     <div class="tactics-box">
@@ -357,12 +390,16 @@ with st.container():
 # 10. 한국체육산업개발 테니스장 이용 정보 (공공데이터)
 # ----------------------------------------------------
 st.markdown("---")
-st.markdown("### 올림픽 테니스장 이용 정보")
-st.caption("한국체육산업개발 공공데이터 (data.go.kr 15133891). 코트별 실시간 예약 슬롯은 공개되지 않아 공식 예약 사이트로 연결합니다.")
+st.header("올림픽 테니스장 이용 정보")
+st.caption("한국체육산업개발 공공데이터 (data.go.kr 15133891). 월별 인원이며 코트별 실시간 슬롯은 없습니다.")
 
 @st.cache_data(ttl=3600)
 def load_kspo_usage():
     return fetch_usage_summary()
+
+@st.cache_data(ttl=3600)
+def load_kspo_daily_series():
+    return fetch_daily_series(2025)
 
 usage = load_kspo_usage()
 if usage.get("is_live"):
@@ -371,9 +408,17 @@ if usage.get("is_live"):
     col_u1.metric("일일입장", f"{usage['daily_visitors']:,}명", usage.get("busy_label"))
     col_u2.metric("월회원", f"{usage['monthly_members']:,}명")
     col_u3.metric("전년 동월", f"{yoy:+d}%" if yoy is not None else "-", usage.get("period_label"))
+    series = load_kspo_daily_series()
+    if series:
+        df_series = pd.DataFrame(series)
+        st.bar_chart(
+            df_series,
+            x="month",
+            y="일일입장",
+            width="stretch",
+            alt="2025년 월별 일일입장 인원. 여름·가을에 한산해집니다.",
+        )
+        st.caption("2025년 월별 일일입장. 강풍 달에는 실내 5~8번을 안내하는 근거로 씁니다.")
     st.link_button("올림픽테니스장 공식 예약", usage["reserve_url"], width="stretch")
-    if os.path.isfile(CSV_PATH):
-        df_usage = pd.read_csv(CSV_PATH, encoding="cp949")
-        st.dataframe(df_usage, width="stretch", hide_index=True, alt="올림픽공원 테니스장 월별 이용 정보")
 else:
     st.warning("이용 정보를 불러오지 못했습니다.")
